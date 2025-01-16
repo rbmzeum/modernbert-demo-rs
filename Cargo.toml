@@ -5,4 +5,6 @@ edition = "2024"
 
 [dependencies]
 embed_anything = "0.5.1"
+ndarray = "0.16.1"
+prettytable-rs = "0.10.0"
 tokio = "1.43.0"
