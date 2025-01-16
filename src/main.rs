@@ -22,12 +22,26 @@ async fn main() {
         "Собака играет в парке.".to_string(),
         "Щенок гоняется за мячом.".to_string(),
         "Собака лает на прохожих.".to_string(),
+        "Собака виляет хвостом.".to_string(),
+        "Собака копает яму в саду.".to_string(),
+        "Собака охраняет дом.".to_string(),
+        "Собака прыгает через препятствие.".to_string(),
+        "Собака плавает в озере.".to_string(),
+        "Собака спит на коврике.".to_string(),
+        "Собака ест кость.".to_string(),
     ];
 
     let semantic_list_2 = vec![
         "Кот спит на диване.".to_string(),
         "Котенок играет с клубком ниток.".to_string(),
         "Кот мурлычет на солнце.".to_string(),
+        "Кот ловит мышь.".to_string(),
+        "Кот лежит на подоконнике.".to_string(),
+        "Кот пьет молоко.".to_string(),
+        "Кот царапает мебель.".to_string(),
+        "Кот прыгает на стол.".to_string(),
+        "Кот прячется под кроватью.".to_string(),
+        "Кот играет с игрушечной мышкой.".to_string(),
     ];
 
     // Нейтральные проверочные фразы
@@ -71,34 +85,63 @@ async fn main() {
 
     // Вычисляем расстояния для test_phrase_1
     let mut distances_1 = Vec::new();
-    for embedding in semantic_embeddings_1.iter().chain(semantic_embeddings_2.iter()) {
+    for (i, embedding) in semantic_embeddings_1.iter().enumerate() {
         let embedding = extract_vector(embedding);
-        distances_1.push(euclidean_distance(&test_embedding_1, &embedding));
+        distances_1.push((i, "semantic_list_1", euclidean_distance(&test_embedding_1, &embedding)));
+    }
+    for (i, embedding) in semantic_embeddings_2.iter().enumerate() {
+        let embedding = extract_vector(embedding);
+        distances_1.push((i, "semantic_list_2", euclidean_distance(&test_embedding_1, &embedding)));
     }
 
     // Вычисляем расстояния для test_phrase_2
     let mut distances_2 = Vec::new();
-    for embedding in semantic_embeddings_1.iter().chain(semantic_embeddings_2.iter()) {
+    for (i, embedding) in semantic_embeddings_1.iter().enumerate() {
         let embedding = extract_vector(embedding);
-        distances_2.push(euclidean_distance(&test_embedding_2, &embedding));
+        distances_2.push((i, "semantic_list_1", euclidean_distance(&test_embedding_2, &embedding)));
+    }
+    for (i, embedding) in semantic_embeddings_2.iter().enumerate() {
+        let embedding = extract_vector(embedding);
+        distances_2.push((i, "semantic_list_2", euclidean_distance(&test_embedding_2, &embedding)));
     }
 
-    // Создаём таблицу для вывода результатов
-    let mut table = Table::new();
+    // Сортируем расстояния для test_phrase_1
+    distances_1.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap());
 
-    // Заголовки таблицы
-    table.add_row(row!["Текст", "Расстояние до test_phrase_1", "Расстояние до test_phrase_2"]);
+    // Сортируем расстояния для test_phrase_2
+    distances_2.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap());
 
-    // Добавляем строки с результатами для первой семантики
-    for (i, text) in semantic_list_1.iter().enumerate() {
-        table.add_row(row![text, distances_1[i], distances_2[i]]);
+    // Выводим результаты для test_phrase_1
+    let mut table_1 = Table::new();
+    table_1.add_row(row!["Проверочная фраза:", test_phrase_1]);
+    table_1.add_row(row!["Текст", "Список", "Расстояние"]);
+
+    for (i, list, distance) in distances_1.iter() {
+        let text = if *list == "semantic_list_1" {
+            &semantic_list_1[*i]
+        } else {
+            &semantic_list_2[*i]
+        };
+        table_1.add_row(row![text, list, distance]);
     }
 
-    // Добавляем строки с результатами для второй семантики
-    for (i, text) in semantic_list_2.iter().enumerate() {
-        table.add_row(row![text, distances_1[semantic_list_1.len() + i], distances_2[semantic_list_1.len() + i]]);
+    println!("Результаты для test_phrase_1:");
+    table_1.printstd();
+
+    // Выводим результаты для test_phrase_2
+    let mut table_2 = Table::new();
+    table_2.add_row(row!["Проверочная фраза:", test_phrase_2]);
+    table_2.add_row(row!["Текст", "Список", "Расстояние"]);
+
+    for (i, list, distance) in distances_2.iter() {
+        let text = if *list == "semantic_list_1" {
+            &semantic_list_1[*i]
+        } else {
+            &semantic_list_2[*i]
+        };
+        table_2.add_row(row![text, list, distance]);
     }
 
-    // Выводим таблицу
-    table.printstd();
+    println!("\nРезультаты для test_phrase_2:");
+    table_2.printstd();
 }
