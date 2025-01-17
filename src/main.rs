@@ -4,6 +4,7 @@ use embed_anything::Dtype;
 use tokio; // Используем tokio как асинхронную среду выполнения
 use ndarray::Array1; // Для работы с векторами
 use prettytable::{Table, row}; // Для вывода таблицы
+use statrs::statistics::{Data, Distribution, Median}; // Для расчёта статистики
 
 #[tokio::main] // Включаем асинхронный контекст
 async fn main() {
@@ -144,4 +145,73 @@ async fn main() {
 
     println!("\nРезультаты для test_phrase_2:");
     table_2.printstd();
+
+    // Функция для расчёта моды, медианы и среднего значения
+    fn calculate_statistics(distances: &[f32]) -> (f64, f64, f64) {
+        let mut sorted_distances = distances.to_vec();
+        sorted_distances.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        // Медиана
+        let median = if sorted_distances.len() % 2 == 0 {
+            (sorted_distances[sorted_distances.len() / 2 - 1] as f64 + sorted_distances[sorted_distances.len() / 2] as f64) / 2.0
+        } else {
+            sorted_distances[sorted_distances.len() / 2] as f64
+        };
+
+        // Среднее значение
+        let mean = sorted_distances.iter().map(|&x| x as f64).sum::<f64>() / sorted_distances.len() as f64;
+
+        // Мода
+        use std::collections::HashMap;
+        let mut frequency_map = HashMap::new();
+        for &distance in &sorted_distances {
+            *frequency_map.entry(distance.to_bits()).or_insert(0) += 1;
+        }
+        let mode = frequency_map
+            .into_iter()
+            .max_by_key(|&(_, count)| count)
+            .map(|(bits, _)| f32::from_bits(bits) as f64)
+            .unwrap_or(0.0);
+
+        (mode, median, mean)
+    }
+
+    // Расчёт статистики для test_phrase_1 и semantic_list_1
+    let distances_1_list_1: Vec<f32> = distances_1.iter()
+        .filter(|(_, list, _)| *list == "semantic_list_1")
+        .map(|(_, _, distance)| *distance)
+        .collect();
+    let (mode_1_list_1, median_1_list_1, mean_1_list_1) = calculate_statistics(&distances_1_list_1);
+
+    // Расчёт статистики для test_phrase_1 и semantic_list_2
+    let distances_1_list_2: Vec<f32> = distances_1.iter()
+        .filter(|(_, list, _)| *list == "semantic_list_2")
+        .map(|(_, _, distance)| *distance)
+        .collect();
+    let (mode_1_list_2, median_1_list_2, mean_1_list_2) = calculate_statistics(&distances_1_list_2);
+
+    // Расчёт статистики для test_phrase_2 и semantic_list_1
+    let distances_2_list_1: Vec<f32> = distances_2.iter()
+        .filter(|(_, list, _)| *list == "semantic_list_1")
+        .map(|(_, _, distance)| *distance)
+        .collect();
+    let (mode_2_list_1, median_2_list_1, mean_2_list_1) = calculate_statistics(&distances_2_list_1);
+
+    // Расчёт статистики для test_phrase_2 и semantic_list_2
+    let distances_2_list_2: Vec<f32> = distances_2.iter()
+        .filter(|(_, list, _)| *list == "semantic_list_2")
+        .map(|(_, _, distance)| *distance)
+        .collect();
+    let (mode_2_list_2, median_2_list_2, mean_2_list_2) = calculate_statistics(&distances_2_list_2);
+
+    // Выводим статистику в таблицу
+    let mut stats_table = Table::new();
+    stats_table.add_row(row!["Проверочная фраза", "Список", "Мода", "Медиана", "Среднее"]);
+    stats_table.add_row(row!["test_phrase_1", "semantic_list_1", mode_1_list_1, median_1_list_1, mean_1_list_1]);
+    stats_table.add_row(row!["test_phrase_1", "semantic_list_2", mode_1_list_2, median_1_list_2, mean_1_list_2]);
+    stats_table.add_row(row!["test_phrase_2", "semantic_list_1", mode_2_list_1, median_2_list_1, mean_2_list_1]);
+    stats_table.add_row(row!["test_phrase_2", "semantic_list_2", mode_2_list_2, median_2_list_2, mean_2_list_2]);
+
+    println!("\nСтатистика расстояний:");
+    stats_table.printstd();
 }
